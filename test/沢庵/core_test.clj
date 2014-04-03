@@ -18,9 +18,13 @@
         ptrue (load-seq (seq "I01\n."))
         pfalse (load-seq (seq "I00\n."))
         pstring1 (load-seq (seq "S'Oh hai'\np0\n."))
-        pstring2 (load-seq (seq "S'Oh hai\\nthere'\np0\n."))]
+        pstring2 (load-seq (seq "S'Oh hai\\nthere'\np0\n."))
+        pnone (load-seq (seq "N."))
+        pfloat (load-seq (seq "F4.25\n."))]
     (is (= pint 42))
     (is (= ptrue true))
     (is (= pfalse false))
     (is (= pstring1 "Oh hai"))
-    (is (= pstring2 "Oh hai\nthere"))))
+    (is (= pstring2 "Oh hai\nthere"))
+    (is (= pnone :None))
+    (is (= pfloat 4.25))))

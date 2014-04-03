@@ -12,6 +12,10 @@ into maps with some extra jazz as best as it possible under the circumstances.
 You're on your own for methods though. If the moons align recursive structures
 should work. Mostly. Kinda.
 
+Some things to note about the API:
+- Python's `None` **DOES NOT** translate into Clojure's nil, but rather the 
+`:None` keyword. This is to distinguish between no value in the map versus None.
+
 ## License
 Copyright (C) 2014 Ryan (Lanny) Jenkins
 

@@ -2,7 +2,8 @@
   (:require
     (clojure [string :as string]))
   (:import
-    [java.lang.Integer]))
+    (java.lang Integer
+               Float)))
 
 ;MARK            = '('   # push special markobject on stack
 ;STOP            = '.'   # every pickle ends with STOP
@@ -133,6 +134,13 @@
              (unescape-string (string/replace line #"(^'|'$)" ""))) 
        memo]))
 
+(defn load-float [s stack memo]
+  (let [[line n-in] (readline s)]
+    [n-in (conj stack (Float/parseFloat line)) memo]))
+
+(defn load-none [s stack memo]
+  [s (conj stack :None) memo])
+
 (defn load-put [s stack memo]
   "Store first item on stack in memo on key specified by opcode arg."
   (let [[line n-in] (readline s)]
@@ -141,6 +149,8 @@
 (def default-instructions
   {\g load-global
    \I load-int
+   \F load-float
+   \N load-none
    \S load-stringです
    \p load-put})
 
