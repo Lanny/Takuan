@@ -37,7 +37,7 @@
     (is (= result {"hi" 2 "you" "."}))))
 
 
-(deftest test-dictionaries
+(deftest test-lists
   (let [pickle "(lp0\nI1\naF4.25\naS'abc'\np1\na."
         result (load-seq pickle)]
     (is (= result [1 4.25 "abc"]))))
@@ -46,3 +46,17 @@
   (let [pickle "(dp0\nS'you'\np1\nF4.25\nsS'hi'\np2\nI2\ns."
         result (load-seq pickle)]
     (is (= result {"hi" 2 "you" 4.25}))))
+
+(def simple-object-pickle (seq (str "ccopy_reg\n_reconstructor\np0\n(c__main__"
+                                    "\nTestClass\np1\nc__builtin__\nobject\np2"
+                                    "\nNtp3\nRp4\n(dp5\nS'string_val'\np6\nS'o"
+                                    "h hai there'\np7\nsS'ivo'\np8\nI42\nsS'fl"
+                                    "oat_val'\np9\nF3.5\nsb.")))
+
+(deftest test-obj-pickle
+  (let [result (load-seq simple-object-pickle)]
+    (is (= result {:__module__ "__main__"
+                   :__name__ "TestClass"
+                   :ivo 42
+                   :string_val "oh hai there"
+                   :float_val 3.5}))))

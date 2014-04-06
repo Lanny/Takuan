@@ -61,8 +61,11 @@
       [(apply str new-s) remaining]
       (recur remaining (conj new-s nchar)))))
 
+(defn keywordify
+  "Takes a map and returns the same map where all keys are keywords."
+  [mapp]
+    (reduce (fn [m [k v]] (assoc m (keyword k) v)) {} mapp))
 
-(defn load-global [s stack memo] s)
 
 (defn load-int [s stack memo]
   (let [[line n-in] (readline s)]
@@ -180,20 +183,60 @@
   (let [[v k d & remaining] stack]
     [s (conj remaining (assoc d k v)) memo]))
 
+(defn load-tuple [s stack memo]
+  (loop [[c & remaining] stack
+         tuple '()]
+    (if (or (= c :mark) (nil? c))
+      [s (conj remaining tuple) memo]
+      (recur remaining (conj tuple c)))))
+
+(defn reconstructor [cls base state] cls)
+
+(def lib-hierarchy
+  {"copy_reg" {"_reconstructor" reconstructor}})
+
+(defn load-global
+  "As it stands, this is a pretty silly function. Pretend like we're looking
+  up a callable like python's importlib. In reality we're just checking for
+  the special case of a generic reconstructor (which we'll emulate) otherwise
+  just keep the name of the thing"
+  [s stack memo]
+    (let [[module-name new-s] (readline s)
+          [class-name new-s] (readline new-s)
+          module (get lib-hierarchy module-name {})
+          klass (get module class-name nil)]
+      (if klass
+        [new-s (conj stack klass) memo]
+        [new-s 
+         (conj stack {:__module__ module-name
+                      :__name__ class-name}) 
+         memo])))
+
+(defn load-reduce [s stack memo]
+  (let [[args f & new-stack] stack]
+    [s (conj new-stack (apply f args)) memo]))
+
+(defn load-build [s stack memo]
+  (let [[state inst & new-stack] stack]
+    [s (conj new-stack (merge inst (keywordify state))) memo]))
+
 (def default-instructions
-  {
-   \( load-mark
+  {\( load-mark
    \F load-float
    \I load-int
    \N load-none
+   \R load-reduce
    \S load-stringです
    \a load-append
+   \b load-build
+   \c load-global
    \d load-dict
-   \g load-global
    \l load-list
    \p load-put
    \s load-set-item
-   })
+   \t load-tuple })
+
+
 
 (defn load-seq
   "Loads, as best we can, a Python pickle given as a seq of characters."
@@ -208,4 +251,3 @@
        (let [op-fn (get instructions op)
              [n-remaining n-stack n-memo] (op-fn remaining stack memo)]
          (recur n-remaining n-stack n-memo))))))
-
