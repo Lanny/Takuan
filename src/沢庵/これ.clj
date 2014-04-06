@@ -146,13 +146,40 @@
   (let [[line n-in] (readline s)]
     [n-in stack (assoc memo line (first stack))]))
 
+(defn load-mark [s stack memo]
+  [s (conj stack :mark) memo])
+
+(defn load-dict [s stack memo]
+  ; Loop through the stack backwards and two at a time building up a "dict".
+  ; Store the resulting map on the top of the stack.
+  (loop [[v k & rem-stack] stack
+         dict {}]
+    (cond
+      (= v :mark) 
+        (if k
+          [s (conj rem-stack k dict) memo]
+          [s (conj rem-stack dict) memo])
+      (= k :mark) (throw (Throwable. "Odd number of key/value pairs on stack"))
+      (not (or v k (seq rem-stack))) 
+        (throw (Throwable. "Exhausted stack without finding a :mark."))
+      :else (recur rem-stack (assoc dict k v)))))
+
+(defn load-set-item [s stack memo]
+  (let [[v k d & remaining] stack]
+    [s (conj remaining (assoc d k v)) memo]))
+
 (def default-instructions
-  {\g load-global
-   \I load-int
+  {
+   \( load-mark
    \F load-float
+   \I load-int
    \N load-none
    \S load-stringです
-   \p load-put})
+   \d load-dict
+   \g load-global
+   \p load-put
+   \s load-set-item
+   })
 
 (defn load-seq
   "Loads, as best we can, a Python pickle given as a seq of characters."

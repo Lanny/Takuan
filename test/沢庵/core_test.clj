@@ -28,3 +28,15 @@
     (is (= pstring2 "Oh hai\nthere"))
     (is (= pnone :None))
     (is (= pfloat 4.25))))
+
+(deftest test-load-dict
+  (let [[_ [result & stack] __] (load-dict '() '(2 "hi" "." "you" :mark) {})]
+    (is (contains? result "hi"))
+    (is (contains? result "you"))
+    (is (empty? stack))
+    (is (= result {"hi" 2 "you" "."}))))
+
+(deftest test-dictionaries
+  (let [pickle "(dp0\nS'you'\np1\nF4.25\nsS'hi'\np2\nI2\ns."
+        result (load-seq pickle)]
+    (is (= result {"hi" 2 "you" 4.25}))))
