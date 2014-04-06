@@ -164,6 +164,18 @@
         (throw (Throwable. "Exhausted stack without finding a :mark."))
       :else (recur rem-stack (assoc dict k v)))))
 
+(defn load-append [s stack memo]
+  (let [[v l & remaining] stack]
+    [s (conj remaining (conj l v)) memo]))
+
+(defn load-list [s stack memo]
+  (loop [[i & rem-stack] stack
+         l []]
+    (cond
+      (= i :mark) [s (conj rem-stack l) memo]
+      (not i) (throw (Throwable. "Exhausted stack without finding a :mark."))
+      :else (recur rem-stack (conj l i)))))
+
 (defn load-set-item [s stack memo]
   (let [[v k d & remaining] stack]
     [s (conj remaining (assoc d k v)) memo]))
@@ -175,8 +187,10 @@
    \I load-int
    \N load-none
    \S load-stringです
+   \a load-append
    \d load-dict
    \g load-global
+   \l load-list
    \p load-put
    \s load-set-item
    })

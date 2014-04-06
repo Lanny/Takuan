@@ -36,6 +36,12 @@
     (is (empty? stack))
     (is (= result {"hi" 2 "you" "."}))))
 
+
+(deftest test-dictionaries
+  (let [pickle "(lp0\nI1\naF4.25\naS'abc'\np1\na."
+        result (load-seq pickle)]
+    (is (= result [1 4.25 "abc"]))))
+
 (deftest test-dictionaries
   (let [pickle "(dp0\nS'you'\np1\nF4.25\nsS'hi'\np2\nI2\ns."
         result (load-seq pickle)]
