@@ -114,6 +114,7 @@
                        \r \return
                        \t \tab
                        \v (char 13)
+                       \u :hex
                        \x :hex
                        (\0 \1 \2 \3 \4 \5 \6 \7 \8 \9) :oct)]
           (cond
@@ -227,6 +228,7 @@
    \N load-none
    \R load-reduce
    \S load-stringです
+   \V load-stringです
    \a load-append
    \b load-build
    \c load-global
@@ -234,9 +236,8 @@
    \l load-list
    \p load-put
    \s load-set-item
-   \t load-tuple })
-
-
+   \t load-tuple
+   \. nil })
 
 (defn load-seq
   "Loads, as best we can, a Python pickle given as a seq of characters."
@@ -246,8 +247,69 @@
    (loop [[op & remaining] pickle
           stack '()
           memo {}]
+     (if-not (contains? instructions op)
+       (throw (Throwable. (format "Unrecognized opcode %s" op))))
+
      (if (= op \.)
        (first stack)
        (let [op-fn (get instructions op)
              [n-remaining n-stack n-memo] (op-fn remaining stack memo)]
          (recur n-remaining n-stack n-memo))))))
+
+; Complex handlers are going to have call back into dump-obj so we declare it
+; ahead of time.
+(declare dump-obj)
+
+(defn save-string 
+  "Returns a string that when unpickled will produce a string `x` on the top
+  of the stack."
+  [x prot-handlers]
+  (str \S (pr-str x)))
+
+(defn save-sequential [x prot-handlers]
+  (loop [[item & remaining] x
+         rets "(l"]
+    (if-not item
+      rets
+      (recur remaining 
+             (str rets
+                  (dump-obj item prot-handlers false) 
+                  \a)))))
+
+(defn save-long [x prot-handlers]
+  (str \I (Long/toString x 10) \newline))
+
+
+(def prot-0-type-handlers
+  {java.lang.String save-string
+   java.lang.Long save-long
+   clojure.lang.PersistentVector save-sequential
+   clojure.lang.PersistentList save-sequential
+   nil (constantly \N)
+   })
+
+(defn dump-obj 
+  "Serializes any combination of clojure primatives and collections into a
+  pickle returned as string. Maps with the `__module__` and `__name__` keys
+  will be serialized as objects."
+  ([obj] 
+   ; If no protocol is specified, assume 0
+   (dump-obj obj 0))
+
+  ([obj protocol]
+   ; Mux a protocol number to a type handler map and begin a terminal pickling
+   (let [prot-handlers (get {0 prot-0-type-handlers}
+                            protocol)]
+     (if (nil? prot-handlers)
+       (throw (Throwable. "Unsupported protocol."))
+       (dump-obj obj prot-handlers true))))
+
+  ([obj prot-handlers terminal] 
+   ; Pickle some actual data. If terminal is true will append the `.` symbol
+   ; to the pickle. This may only occur once per valid pickle, so all recursive
+   ; calls to this function must set terminal false.
+   (let [handler (->> obj type prot-handlers)
+         pickle-part (handler obj prot-handlers)]
+     (if terminal
+       (str pickle-part \.)
+       pickle-part))))

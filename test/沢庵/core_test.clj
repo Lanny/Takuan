@@ -60,3 +60,9 @@
                    :ivo 42
                    :string_val "oh hai there"
                    :float_val 3.5}))))
+
+(deftest test-tweepy-obj
+  (let [tweepyckle (seq (slurp "test/沢庵/tweepy.pickle"))
+        tweepy-obj (load-seq tweepyckle)]
+    (is tweepy-obj)))
+
