@@ -2,8 +2,7 @@
   (:require
     (clojure [string :as string]))
   (:import
-    (java.lang Integer
-               Float)))
+    (java.lang Integer Long Float)))
 
 ;MARK            = '('   # push special markobject on stack
 ;STOP            = '.'   # every pickle ends with STOP
@@ -73,7 +72,7 @@
      (conj stack (cond 
                    (= line "01") true  ; True and false are encoded as
                    (= line "00") false ; special cases of integers.
-                   :else (Integer/parseInt line)))
+                   :else (Long/parseLong line)))
      memo]))
 
 (def hex-vals
@@ -124,7 +123,10 @@
                                     :hex [hex-vals 16]
                                     :oct [oct-vals 8])
                     code (read-rest (rest remaining) values)
-                    unesc (char (Integer/parseInt (apply str code) base))]
+                    unesc (String. 
+                            (int-array 
+                              [(Integer/parseInt 
+                                 (apply str code) base)]) 0 1)]
                 (recur (nthrest remaining (inc (count code))) 
                        (conj rstr unesc))))))))
 
@@ -213,6 +215,10 @@
                       :__name__ class-name}) 
          memo])))
 
+(defn load-get [s stack memo]
+  (let [[memo-index new-s] (readline s)]
+    [new-s (conj stack (get memo memo-index)) memo]))
+
 (defn load-reduce [s stack memo]
   (let [[args f & new-stack] stack]
     [s (conj new-stack (apply f args)) memo]))
@@ -233,13 +239,14 @@
    \b load-build
    \c load-global
    \d load-dict
+   \g load-get
    \l load-list
    \p load-put
    \s load-set-item
    \t load-tuple
    \. nil })
 
-(defn load-seq
+(defn pickle->data
   "Loads, as best we can, a Python pickle given as a seq of characters."
   ([pickle]
    (load-seq pickle default-instructions))
@@ -288,7 +295,7 @@
    nil (constantly \N)
    })
 
-(defn dump-obj 
+(defn data->pickle
   "Serializes any combination of clojure primatives and collections into a
   pickle returned as string. Maps with the `__module__` and `__name__` keys
   will be serialized as objects."

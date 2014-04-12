@@ -14,13 +14,13 @@
     (is (empty? r3))))
 
 (deftest test-primatives
-  (let [pint (load-seq (seq "I42\n."))
-        ptrue (load-seq (seq "I01\n."))
-        pfalse (load-seq (seq "I00\n."))
-        pstring1 (load-seq (seq "S'Oh hai'\np0\n."))
-        pstring2 (load-seq (seq "S'Oh hai\\nthere'\np0\n."))
-        pnone (load-seq (seq "N."))
-        pfloat (load-seq (seq "F4.25\n."))]
+  (let [pint (pickle->data (seq "I42\n."))
+        ptrue (pickle->data (seq "I01\n."))
+        pfalse (pickle->data (seq "I00\n."))
+        pstring1 (pickle->data (seq "S'Oh hai'\np0\n."))
+        pstring2 (pickle->data (seq "S'Oh hai\\nthere'\np0\n."))
+        pnone (pickle->data (seq "N."))
+        pfloat (pickle->data (seq "F4.25\n."))]
     (is (= pint 42))
     (is (= ptrue true))
     (is (= pfalse false))
@@ -39,12 +39,12 @@
 
 (deftest test-lists
   (let [pickle "(lp0\nI1\naF4.25\naS'abc'\np1\na."
-        result (load-seq pickle)]
+        result (pickle->data pickle)]
     (is (= result [1 4.25 "abc"]))))
 
 (deftest test-dictionaries
   (let [pickle "(dp0\nS'you'\np1\nF4.25\nsS'hi'\np2\nI2\ns."
-        result (load-seq pickle)]
+        result (pickle->data pickle)]
     (is (= result {"hi" 2 "you" 4.25}))))
 
 (def simple-object-pickle (seq (str "ccopy_reg\n_reconstructor\np0\n(c__main__"
@@ -54,7 +54,7 @@
                                     "oat_val'\np9\nF3.5\nsb.")))
 
 (deftest test-obj-pickle
-  (let [result (load-seq simple-object-pickle)]
+  (let [result (pickle->data simple-object-pickle)]
     (is (= result {:__module__ "__main__"
                    :__name__ "TestClass"
                    :ivo 42
@@ -63,6 +63,6 @@
 
 (deftest test-tweepy-obj
   (let [tweepyckle (seq (slurp "test/沢庵/tweepy.pickle"))
-        tweepy-obj (load-seq tweepyckle)]
+        tweepy-obj (pickle->data tweepyckle)]
     (is tweepy-obj)))
 
